@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI Agent Workflow Assistant</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="workspace">
+        <aside class="sidebar" aria-label="Workflow controls">
+          <div class="brand">
+            <span class="brand-mark">AI</span>
+            <div>
+              <p class="eyebrow">Agentic Workflow Lab</p>
+              <h1>AI Agent Workflow Assistant</h1>
+            </div>
+          </div>
+
+          <form id="workflow-form" class="control-panel">
+            <label for="template-select">Workflow Template</label>
+            <select id="template-select" name="template-select"></select>
+
+            <label for="objective">Objective</label>
+            <textarea id="objective" name="objective" rows="5">Analyze sales workflow data and recommend operational next steps</textarea>
+
+            <div class="field-grid">
+              <div>
+                <label for="limit">Event Limit</label>
+                <input id="limit" name="limit" type="number" min="1" max="500" value="25" />
+              </div>
+              <div>
+                <label for="data-path">Dataset</label>
+                <input id="data-path" name="data-path" type="text" value="data/sample_sales_events.jsonl" />
+              </div>
+            </div>
+
+            <label for="file-upload">Upload Evidence File</label>
+            <input id="file-upload" name="file-upload" type="file" accept=".csv,.json,.jsonl,.ndjson,.pdf" />
+
+            <div class="mode-row" role="group" aria-label="LLM mode">
+              <label class="mode-option">
+                <input type="radio" name="llm-provider" value="demo" checked />
+                Demo
+              </label>
+              <label class="mode-option">
+                <input type="radio" name="llm-provider" value="openai" />
+                OpenAI
+              </label>
+            </div>
+
+            <button id="run-button" class="primary-button" type="submit">
+              <span class="button-icon" aria-hidden="true">▶</span>
+              Run Agent
+            </button>
+          </form>
+
+          <div class="signal-strip" aria-label="Agent capabilities">
+            <span>Planner</span>
+            <span>Multi-Agent</span>
+            <span>Tool Use</span>
+            <span>Upload</span>
+            <span>State</span>
+            <span>Export</span>
+          </div>
+
+          <section class="history-panel" aria-label="Recent workflow runs">
+            <div class="section-heading">
+              <h3>Recent Runs</h3>
+            </div>
+            <div id="run-history" class="run-history">
+              <button type="button" disabled>No saved runs yet</button>
+            </div>
+          </section>
+        </aside>
+
+        <section class="main-panel">
+          <header class="topbar">
+            <div>
+              <p class="eyebrow">Live Workflow Trace</p>
+              <h2 id="run-title">Ready to run</h2>
+            </div>
+            <div class="topbar-actions">
+              <span class="environment-badge">Local Demo</span>
+              <span class="user-chip">Manik</span>
+              <div id="status-pill" class="status-pill idle">Idle</div>
+            </div>
+          </header>
+
+          <section class="dashboard-grid" aria-label="Run dashboard">
+            <article>
+              <span>Total Runs</span>
+              <strong id="dash-total">0</strong>
+            </article>
+            <article>
+              <span>Completed</span>
+              <strong id="dash-completed">0</strong>
+            </article>
+            <article>
+              <span>Failed</span>
+              <strong id="dash-failed">0</strong>
+            </article>
+            <article>
+              <span>Last Upload</span>
+              <strong id="dash-upload">--</strong>
+            </article>
+          </section>
+
+          <section class="metrics-grid" aria-label="Workflow metrics">
+            <article>
+              <span>Events</span>
+              <strong id="metric-events">--</strong>
+            </article>
+            <article>
+              <span>Revenue</span>
+              <strong id="metric-revenue">--</strong>
+            </article>
+            <article>
+              <span>Top Channel</span>
+              <strong id="metric-channel">--</strong>
+            </article>
+            <article>
+              <span>Anomalies</span>
+              <strong id="metric-anomalies">--</strong>
+            </article>
+          </section>
+
+          <section class="content-grid">
+            <div class="workflow-board">
+              <div class="section-heading">
+                <h3>Execution Steps</h3>
+                <span id="step-count">0/4 complete</span>
+              </div>
+              <div id="steps" class="steps"></div>
+            </div>
+
+            <div class="insights-panel">
+              <div class="section-heading">
+                <h3>Agent Summary</h3>
+                <div class="export-actions">
+                  <button id="download-json" class="icon-button" type="button" title="Download JSON report" disabled>JSON</button>
+                  <button id="download-md" class="icon-button" type="button" title="Download Markdown report" disabled>MD</button>
+                  <button id="print-pdf" class="icon-button" type="button" title="Print or save as PDF" disabled>PDF</button>
+                </div>
+              </div>
+              <p id="summary" class="summary-text">Run the assistant to generate a concise operational summary.</p>
+
+              <div class="section-heading actions-heading">
+                <h3>Agent Findings</h3>
+              </div>
+              <ul id="findings" class="findings-list">
+                <li>Multi-agent findings will appear here after the workflow runs.</li>
+              </ul>
+
+              <div class="section-heading actions-heading">
+                <h3>Recommended Actions</h3>
+              </div>
+              <ul id="actions" class="actions-list">
+                <li>Recommendations will appear here after the agent runs.</li>
+              </ul>
+            </div>
+          </section>
+
+          <section class="lower-grid">
+            <div class="chart-panel">
+              <div class="section-heading">
+                <h3>Charts</h3>
+              </div>
+              <div id="charts" class="charts">
+                <p class="empty-note">Charts will appear after a workflow run.</p>
+              </div>
+            </div>
+
+            <div class="explain-panel">
+              <div class="section-heading">
+                <h3>Explainability</h3>
+              </div>
+              <div id="explanations" class="explanations">
+                <p class="empty-note">Each agent will explain its input, decision, confidence, and reasoning.</p>
+              </div>
+            </div>
+          </section>
+        </section>
+      </section>
+    </main>
+
+    <template id="step-template">
+      <article class="step-card">
+        <div class="step-status" aria-hidden="true"></div>
+        <div class="step-body">
+          <div class="step-title-row">
+            <h4></h4>
+            <span></span>
+          </div>
+          <div class="agent-label"></div>
+          <p></p>
+          <pre></pre>
+        </div>
+      </article>
+    </template>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>

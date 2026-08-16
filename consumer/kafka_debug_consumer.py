@@ -18,8 +18,8 @@ def main() -> None:
             "auto.offset.reset": "latest",
         }
     )
-    consumer.subscribe([config["sales_topic"]])
-    logger.info("Listening for Kafka events", extra={"extra_fields": {"topic": config["sales_topic"]}})
+    consumer.subscribe([config["security_events_topic"]])
+    logger.info("Listening for Kafka events", extra={"extra_fields": {"topic": config["security_events_topic"]}})
 
     try:
         while True:

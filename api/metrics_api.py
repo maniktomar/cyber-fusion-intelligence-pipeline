@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from utils.config import load_config
 
 
-app = FastAPI(title="Real-Time Sales Metrics API")
+app = FastAPI(title="Real-Time Security Metrics API")
 
 
 def _connect():

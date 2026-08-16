@@ -1,46 +1,51 @@
 # Project Showcase
 
-## Real-Time Sales Analytics Pipeline with AI Insights
+## Real-Time Cyber Fusion Intelligence Pipeline
 
-This project demonstrates a production-style streaming analytics platform for simulated sales transactions. It combines Kafka, PySpark Structured Streaming, Snowflake, Power BI, and an AI-style anomaly explanation layer.
+This project demonstrates a production-style streaming analytics platform for security-oriented operational events. It combines Kafka, PySpark Structured Streaming, Snowflake, Power BI, and an AI-style threat triage layer.
 
 ## Business Problem
 
-Modern commerce teams need to monitor sales performance, operational quality, and suspicious transaction patterns as events arrive. Batch dashboards can miss fast-moving anomalies and make it harder for business users to understand what requires attention.
+Security and operations teams need timely, reliable visibility into event streams such as failed sign-ins, unusual access activity, privilege changes, and API anomalies. Raw event data is often incomplete, duplicated, late, or inconsistent, and batch dashboards miss fast-moving activity.
 
 ## Solution
 
-The platform ingests transaction events in real time, validates and transforms them with Spark, stores curated facts and aggregates in Snowflake, and presents operational KPIs in Power BI. An AI insights layer converts anomaly records into risk scores, explanations, and recommended actions.
+The platform ingests security events in real time, validates and enriches them with Spark, applies deterministic detection rules with severity and MITRE ATT&CK mapping, stores curated facts and aggregates in Snowflake, and presents operational KPIs in Power BI. An AI insights layer converts threat indicators into risk scores, explanations, recommended actions, and triage queue routing.
 
 ## Architecture Highlights
 
-- Event simulation with a Python Kafka producer.
-- Kafka topic for streaming transaction ingestion.
-- PySpark Structured Streaming for parsing, cleaning, validation, anomaly tagging, and aggregation.
-- Snowflake curated tables and BI-friendly mart views.
-- Power BI dashboard pages for KPIs, trends, anomalies, and AI insights.
-- AI-style anomaly explanations and business summaries.
+- Event simulation with a Python Kafka producer covering authentication, data access, API, privilege, and config-change events.
+- Kafka topic for streaming ingestion, keyed by actor for per-identity ordering.
+- PySpark Structured Streaming for parsing, cleaning, deduplication, watermarking, threat tagging, and one-minute aggregation.
+- Quarantine path so invalid records are captured with a failure reason rather than dropped.
+- Snowflake curated tables and BI-friendly mart views, including a data-quality scorecard.
+- Power BI dashboard pages for KPIs, threat activity, data quality, egress, and AI insights.
 - Dockerized local Kafka stack.
-- CI test workflow with GitHub Actions.
+- CI test workflow with GitHub Actions, including Spark batch tests of the detection rules.
 
 ## What Makes It Stand Out
 
-- Real-time streaming design rather than static CSV analysis.
+- Real-time streaming design rather than static log analysis.
 - End-to-end journey from event generation to BI dashboard.
-- Snowflake schema design with fact, error, aggregate, and AI insight tables.
-- AI-assisted recommendations that are understandable to non-technical stakeholders.
-- Beginner-friendly scripts and documentation while preserving professional architecture.
+- Detection rules mapped to MITRE ATT&CK tactics and driven by configuration, not hardcoded constants.
+- Separate injection of threat patterns and data-quality defects, so both detection and quarantine coverage are demonstrable.
+- Snowflake schema design with fact, quarantine, aggregate, and AI insight tables.
+- Detection and scoring logic under automated test with a local Spark session.
 
 ## Interview Talking Points
 
-- How Kafka decouples producers from streaming consumers.
-- Why Spark Structured Streaming checkpoints matter.
-- How invalid events are separated from curated facts.
+- How Kafka decouples producers from streaming consumers, and why actor-keyed partitioning matters for identity analytics.
+- Why Spark Structured Streaming checkpoints, watermarks, and deduplication matter for at-least-once sources.
+- Why the session timezone is pinned to UTC, and how a local-timezone cluster would have silently shifted the off-hours detection rule.
+- How invalid events are quarantined with a reason instead of dropped, and how that feeds the quality scorecard.
 - How Snowflake mart views simplify Power BI reporting.
 - How the AI insight layer can be swapped from rules-based explanations to an LLM provider.
-- How this would scale with Schema Registry, Delta Lake, orchestration, monitoring, and IaC.
+- How this would scale with Schema Registry, threat intelligence enrichment, stateful session analytics, orchestration, and IaC.
 
 ## Resume Bullet
 
-Developed a real-time sales analytics platform using Kafka, PySpark Structured Streaming, Snowflake, Power BI, and AI-generated anomaly insights to ingest, transform, monitor, and explain streaming transaction data.
+Developed a real-time security analytics platform using Kafka, PySpark Structured Streaming, Snowflake, Power BI, and AI-generated threat insights to ingest, validate, detect, and explain streaming security event data with MITRE ATT&CK-mapped indicators and automated triage routing.
 
+## Scope Note
+
+Events are synthetic and generated locally. Detection rules produce prioritised indicators for analyst review; the project is not a SIEM replacement or a confirmed-detection engine.

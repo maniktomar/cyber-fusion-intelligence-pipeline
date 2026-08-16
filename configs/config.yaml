@@ -1,13 +1,13 @@
 app:
-  name: real-time-sales-analytics
+  name: real-time-cyber-fusion-intelligence
   environment: local
 
 kafka:
   bootstrap_servers: ${KAFKA_BOOTSTRAP_SERVERS}
-  sales_topic: ${KAFKA_SALES_TOPIC}
+  security_events_topic: ${KAFKA_SECURITY_EVENTS_TOPIC}
   log_topic: ${KAFKA_LOG_TOPIC}
   producer_events_per_second: ${PRODUCER_EVENTS_PER_SECOND}
-  consumer_group: sales-streaming-pipeline
+  consumer_group: security-streaming-pipeline
 
 spark:
   app_name: ${SPARK_APP_NAME}
@@ -26,7 +26,15 @@ snowflake:
   url: ${SNOWFLAKE_URL}
 
 quality_rules:
-  max_order_amount: 10000
-  accepted_currencies: ["USD", "GBP", "EUR"]
+  max_bytes_out: 10000000000
+  accepted_event_types: ["authentication", "data_access", "api_call", "privilege_change", "config_change"]
+  accepted_outcomes: ["success", "failure", "blocked"]
   late_event_minutes: 10
 
+detection_rules:
+  failed_attempts_threshold: 10
+  data_egress_bytes_threshold: 500000000
+  api_request_rate_threshold: 300
+  high_risk_countries: ["RU", "KP", "IR", "BY", "NG"]
+  off_hours_start: 22
+  off_hours_end: 6

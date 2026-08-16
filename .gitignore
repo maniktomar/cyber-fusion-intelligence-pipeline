@@ -6,6 +6,8 @@ __pycache__/
 .mypy_cache/
 logs/*.log
 logs/*.jsonl
+data/uploads/
+data/agent_runs.json
 *.log
 checkpoints/
 spark-warehouse/
@@ -13,4 +15,28 @@ derby.log
 *.dbc
 *.pbix
 *.pbit
+node_modules/
+.next/
+out/
+
+# Personal documents that live in this working directory but must never be published.
+payslip_pages/
+payslip_crops/
+*.docx
+SOLAS_*
+Screenshot*.pdf
+data-ai-role-responsibilities.md
+solas_render_check/
+
+# Sibling portfolio projects: each is its own repository, not content of this one.
+agentops-command-center/
+cloud-data-warehouse-ai-copilot/
+docushield/
+emars/
+iceberg-lakehouse-platform/
+ireland-energy-ai-pipeline/
 raglens/
+Project-READMEs/
+
+# Internal portfolio brief: candid notes for my own use, not for publication.
+PORTFOLIO.md

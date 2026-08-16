@@ -11,38 +11,59 @@ from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.streaming import StreamingQueryException
 from pyspark.sql import functions as F
 
-from pyspark_jobs.schemas import sales_event_schema
-from pyspark_jobs.transformations import add_anomaly_flags, aggregate_sales_metrics, clean_sales_events
+from pyspark_jobs.schemas import security_event_schema
+from pyspark_jobs.transformations import (
+    add_threat_flags,
+    aggregate_security_metrics,
+    clean_security_events,
+    deduplicate_events,
+)
 from utils.config import load_config
 
 
-FACT_SALES_COLUMNS = [
+FACT_SECURITY_COLUMNS = [
     "event_id",
     "event_time",
     "event_timestamp",
     "ingestion_timestamp",
-    "order_id",
-    "customer_id",
-    "customer_email",
-    "product_id",
-    "category",
-    "quantity",
-    "unit_price",
-    "order_amount",
-    "computed_order_amount",
-    "currency",
-    "payment_method",
-    "sales_channel",
-    "store_region",
-    "ip_address",
+    "event_type",
+    "action",
+    "actor_id",
+    "actor_email",
+    "actor_role",
+    "actor_department",
+    "is_privileged_actor",
+    "session_id",
+    "source_ip",
+    "source_country",
+    "device_type",
+    "user_agent",
+    "target_system",
+    "target_resource",
+    "auth_method",
+    "mfa_used",
+    "outcome",
+    "http_status",
+    "bytes_out",
+    "failed_attempts_1h",
+    "request_rate_1m",
+    "detection_source",
     "is_test_event",
     "source_system",
-    "is_valid_quantity",
-    "is_valid_amount",
-    "is_amount_consistent",
+    "event_hour",
+    "is_valid_event_type",
+    "is_valid_outcome",
+    "is_valid_actor",
+    "is_valid_target",
+    "is_valid_bytes",
+    "is_valid_status",
     "quality_status",
-    "anomaly_reason",
+    "quality_failure_reason",
+    "threat_reason",
     "is_anomaly",
+    "severity",
+    "severity_rank",
+    "mitre_tactic",
     "topic",
     "kafka_partition",
     "kafka_offset",
@@ -50,19 +71,25 @@ FACT_SALES_COLUMNS = [
     "batch_id",
 ]
 
-AGG_SALES_COLUMNS = [
+AGG_SECURITY_COLUMNS = [
     "window_start",
     "window_end",
-    "sales_channel",
-    "category",
-    "currency",
-    "order_count",
-    "gross_sales",
-    "avg_order_value",
-    "unique_customers",
+    "event_type",
+    "target_system",
+    "source_country",
+    "event_count",
+    "failure_count",
+    "blocked_count",
+    "failure_rate",
+    "unique_actors",
+    "unique_source_ips",
+    "total_bytes_out",
     "anomaly_count",
+    "max_severity_rank",
     "batch_id",
 ]
+
+AGG_TABLE = "AGG_SECURITY_METRICS_1M"
 
 
 def create_spark(app_name: str) -> SparkSession:
@@ -70,6 +97,9 @@ def create_spark(app_name: str) -> SparkSession:
         SparkSession.builder.appName(app_name)
         .config("spark.sql.shuffle.partitions", "4")
         .config("spark.sql.streaming.schemaInference", "false")
+        # Events carry UTC offsets; pinning the session keeps event_hour (and the
+        # off-hours detection rule) independent of the cluster's local timezone.
+        .config("spark.sql.session.timeZone", "UTC")
         .getOrCreate()
     )
     spark.sparkContext.setLogLevel("WARN")
@@ -86,7 +116,7 @@ def read_kafka_stream(spark: SparkSession, bootstrap_servers: str, topic: str) -
         .load()
     )
     return raw.select(
-        F.from_json(F.col("value").cast("string"), sales_event_schema).alias("event"),
+        F.from_json(F.col("value").cast("string"), security_event_schema).alias("event"),
         F.col("topic"),
         F.col("partition").alias("kafka_partition"),
         F.col("offset").alias("kafka_offset"),
@@ -111,7 +141,7 @@ def write_batch_to_snowflake(table_name: str, sf_options: dict[str, str]):
     def _writer(batch_df: DataFrame, batch_id: int) -> None:
         if batch_df.rdd.isEmpty():
             return
-        columns = AGG_SALES_COLUMNS if table_name == "AGG_SALES_METRICS_1M" else FACT_SALES_COLUMNS
+        columns = AGG_SECURITY_COLUMNS if table_name == AGG_TABLE else FACT_SECURITY_COLUMNS
         (
             batch_df.withColumn("batch_id", F.lit(batch_id))
             .select(*columns)
@@ -128,15 +158,18 @@ def write_batch_to_snowflake(table_name: str, sf_options: dict[str, str]):
 def start_pipeline(sink: str = "console") -> None:
     config = load_config()
     spark = create_spark(config["spark"]["app_name"])
+    watermark_delay = config["spark"]["watermark_delay"]
     events = read_kafka_stream(
         spark,
         config["kafka"]["bootstrap_servers"],
-        config["kafka"]["sales_topic"],
+        config["kafka"]["security_events_topic"],
     )
-    enriched = add_anomaly_flags(clean_sales_events(events, float(config["quality_rules"]["max_order_amount"])))
+    cleaned = clean_security_events(events, float(config["quality_rules"]["max_bytes_out"]))
+    deduplicated = deduplicate_events(cleaned, watermark_delay)
+    enriched = add_threat_flags(deduplicated)
     valid = enriched.filter(F.col("quality_status") == "valid")
     invalid = enriched.filter(F.col("quality_status") == "invalid")
-    metrics = aggregate_sales_metrics(valid, config["spark"]["watermark_delay"])
+    metrics = aggregate_security_metrics(valid, watermark_delay)
 
     checkpoint_base = config["spark"]["checkpoint_base"]
     trigger = config["spark"]["trigger_processing_time"]
@@ -146,16 +179,16 @@ def start_pipeline(sink: str = "console") -> None:
         sf_options = snowflake_options(config)
         queries.extend(
             [
-                valid.writeStream.foreachBatch(write_batch_to_snowflake("FACT_SALES_EVENTS", sf_options))
-                .option("checkpointLocation", f"{checkpoint_base}/fact_sales_events")
+                valid.writeStream.foreachBatch(write_batch_to_snowflake("FACT_SECURITY_EVENTS", sf_options))
+                .option("checkpointLocation", f"{checkpoint_base}/fact_security_events")
                 .trigger(processingTime=trigger)
                 .start(),
-                invalid.writeStream.foreachBatch(write_batch_to_snowflake("ERROR_SALES_EVENTS", sf_options))
-                .option("checkpointLocation", f"{checkpoint_base}/error_sales_events")
+                invalid.writeStream.foreachBatch(write_batch_to_snowflake("ERROR_SECURITY_EVENTS", sf_options))
+                .option("checkpointLocation", f"{checkpoint_base}/error_security_events")
                 .trigger(processingTime=trigger)
                 .start(),
-                metrics.writeStream.foreachBatch(write_batch_to_snowflake("AGG_SALES_METRICS_1M", sf_options))
-                .option("checkpointLocation", f"{checkpoint_base}/agg_sales_metrics_1m")
+                metrics.writeStream.foreachBatch(write_batch_to_snowflake(AGG_TABLE, sf_options))
+                .option("checkpointLocation", f"{checkpoint_base}/agg_security_metrics_1m")
                 .outputMode("update")
                 .trigger(processingTime=trigger)
                 .start(),
@@ -194,7 +227,7 @@ def start_pipeline(sink: str = "console") -> None:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run the real-time sales streaming pipeline.")
+    parser = argparse.ArgumentParser(description="Run the real-time cyber fusion streaming pipeline.")
     parser.add_argument("--sink", choices=["console", "snowflake"], default="console")
     args = parser.parse_args()
     start_pipeline(args.sink)

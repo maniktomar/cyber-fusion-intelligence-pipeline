@@ -8,5 +8,5 @@ if (-not (Test-Path ".venv\Scripts\python.exe")) {
     throw "Virtual environment not found. Create it with: py -3.11 -m venv .venv"
 }
 
-& ".\.venv\Scripts\python.exe" -m ai_insights.anomaly_insights --limit 100
+& ".\.venv\Scripts\python.exe" -m ai_insights.threat_insights --limit 100
 

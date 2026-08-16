@@ -5,31 +5,40 @@ Connect Power BI Desktop to Snowflake using `Get Data > Snowflake`.
 Recommended tables or views:
 
 - `MARTS.VW_REALTIME_KPIS`
-- `MARTS.VW_SALES_TRENDS`
-- `MARTS.VW_ANOMALY_EVENTS`
+- `MARTS.VW_SECURITY_TRENDS`
+- `MARTS.VW_THREAT_EVENTS`
+- `MARTS.VW_QUARANTINED_EVENTS`
+- `MARTS.VW_DATA_QUALITY_SCORECARD`
+- `MARTS.VW_AI_THREAT_INSIGHTS`
 
 Suggested report pages:
 
-1. Executive KPI Monitor
-   - Cards: gross sales, order count, average order value, anomaly count.
-   - Line chart: gross sales by `window_start`.
-   - Slicer: currency, sales channel, category.
+1. Security Operations Monitor
+   - Cards: events last hour, failed events, blocked events, threat indicators, peak severity.
+   - Line chart: event count by `window_start`.
+   - Slicer: event type, target system, source country.
 
-2. Sales Trends
-   - Area chart: gross sales over time by category.
-   - Bar chart: order count by sales channel.
-   - Matrix: category, currency, order count, gross sales, average order value.
+2. Threat Activity
+   - Column chart: threat indicator count by `threat_reason`.
+   - Bar chart: indicators by `severity` and `target_system`.
+   - Map or bar chart: events by `source_country`.
+   - Table: threat events with actor, target, reason, severity, MITRE tactic.
 
-3. Operational Quality
-   - Table: anomaly events with order id, reason, channel, amount.
-   - Column chart: anomaly count by reason.
-   - KPI: invalid event rate.
+3. Data Quality
+   - KPI: `quality_score_pct` from `VW_DATA_QUALITY_SCORECARD`.
+   - Column chart: quarantined event count by `quality_failure_reason`.
+   - Table: recent quarantined records with ingestion time.
 
-4. AI Insights
+4. Egress and Access
+   - Line chart: `total_bytes_out` by window.
+   - Matrix: event type, target system, event count, failure rate, unique actors.
+   - Table: top actors by failed authentication count.
+
+5. AI Threat Insights
    - Card: average risk score.
-   - Bar chart: count of orders by risk level.
-   - Table: anomaly explanation and recommended action.
-   - Text/table visual: hourly business summary from `MARTS.VW_AI_BUSINESS_SUMMARY`.
+   - Bar chart: event count by risk level and triage queue.
+   - Table: threat explanation and recommended action.
+   - Text/table visual: hourly summary from `MARTS.VW_AI_SECURITY_SUMMARY`.
 
 Refresh options:
 

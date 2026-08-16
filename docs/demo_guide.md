@@ -4,11 +4,11 @@ Use this guide to demonstrate the project in interviews or portfolio reviews.
 
 ## Demo Story
 
-1. A Python producer generates realistic sales transactions.
-2. Kafka receives the event stream through the `sales-transactions` topic.
-3. PySpark Structured Streaming cleans, validates, transforms, and aggregates events.
-4. Snowflake stores curated facts, rejected events, aggregate metrics, and AI anomaly insights.
-5. Power BI visualizes KPIs, trends, anomalies, and AI-generated recommendations.
+1. A Python producer generates synthetic security events, with a small share carrying deliberate threat patterns and data-quality defects.
+2. Kafka receives the event stream through the `security-events` topic.
+3. PySpark Structured Streaming cleans, validates, deduplicates, applies detection rules, and aggregates events.
+4. Snowflake stores curated facts, quarantined events, aggregate metrics, and AI threat insights.
+5. Power BI visualizes KPIs, threat activity, data quality, and AI-generated recommendations.
 
 ## Quick Local Demo
 
@@ -63,23 +63,37 @@ After data lands in Snowflake:
 ## Verification Queries
 
 ```sql
-SELECT COUNT(*) FROM REALTIME_ANALYTICS.CURATED.FACT_SALES_EVENTS;
-SELECT COUNT(*) FROM REALTIME_ANALYTICS.CURATED.AGG_SALES_METRICS_1M;
-SELECT COUNT(*) FROM REALTIME_ANALYTICS.CURATED.AI_ANOMALY_INSIGHTS;
+SELECT COUNT(*) FROM REALTIME_ANALYTICS.CURATED.FACT_SECURITY_EVENTS;
+SELECT COUNT(*) FROM REALTIME_ANALYTICS.CURATED.ERROR_SECURITY_EVENTS;
+SELECT COUNT(*) FROM REALTIME_ANALYTICS.CURATED.AGG_SECURITY_METRICS_1M;
+SELECT COUNT(*) FROM REALTIME_ANALYTICS.CURATED.AI_THREAT_INSIGHTS;
 SELECT * FROM REALTIME_ANALYTICS.MARTS.VW_REALTIME_KPIS;
-SELECT * FROM REALTIME_ANALYTICS.MARTS.VW_AI_BUSINESS_SUMMARY;
+SELECT * FROM REALTIME_ANALYTICS.MARTS.VW_DATA_QUALITY_SCORECARD;
+SELECT * FROM REALTIME_ANALYTICS.MARTS.VW_AI_SECURITY_SUMMARY;
+
+-- Which detection rules are firing
+SELECT threat_reason, severity, COUNT(*) AS indicator_count
+FROM REALTIME_ANALYTICS.MARTS.VW_THREAT_EVENTS
+GROUP BY threat_reason, severity
+ORDER BY indicator_count DESC;
+
+-- Why records were quarantined
+SELECT quality_failure_reason, COUNT(*) AS quarantined
+FROM REALTIME_ANALYTICS.MARTS.VW_QUARANTINED_EVENTS
+GROUP BY quality_failure_reason
+ORDER BY quarantined DESC;
 ```
 
 ## Power BI Pages
 
-- Real-Time KPI Monitor
-- Sales Trends
-- Anomaly Monitor
-- AI Insights and Recommendations
+- Security Operations Monitor
+- Threat Activity
+- Data Quality
+- Egress and Access
+- AI Threat Insights
 
 ## Cleanup
 
 ```powershell
 .\scripts\stop_kafka.ps1
 ```
-

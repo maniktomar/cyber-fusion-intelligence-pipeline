@@ -13,7 +13,8 @@
 - Track Kafka consumer lag by topic, partition, and consumer group.
 - Alert on Spark query termination, repeated failed micro-batches, and checkpoint storage failures.
 - Monitor Snowflake warehouse credits, query duration, failed loads, and table growth.
-- Add data quality alerts for invalid event rate and anomaly count thresholds.
+- Add data quality alerts on the quarantine rate from `MARTS.VW_DATA_QUALITY_SCORECARD`.
+- Alert on threat indicator spikes by severity, especially sustained CRITICAL volume.
 
 ## Useful Metrics
 
