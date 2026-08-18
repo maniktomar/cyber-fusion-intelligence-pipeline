@@ -37,6 +37,12 @@ class Settings(BaseSettings):
 
     # Shared secret for the Zendesk App (Admin Center -> Apps -> your app).
     # Blank rejects every sidebar request rather than serving them unauthenticated.
+    # Read through Settings rather than left to the SDK's own os.environ
+    # lookup: pydantic-settings loads .env into this object and never touches
+    # os.environ, so a key placed in .env would otherwise be invisible to the
+    # Anthropic client and fail with a confusing "no API key" at first triage.
+    anthropic_api_key: str = ""
+
     zendesk_app_secret: str = ""
     zendesk_app_issuer: str = ""
 

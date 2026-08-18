@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from functools import lru_cache
 
+import anthropic
+
 from app.auth.oauth import ZendeskOAuthClient
 from app.auth.state import OAuthStateStore
 from app.auth.token_store import EncryptedTokenStore
@@ -46,7 +48,15 @@ def get_knowledge_base() -> KnowledgeBase:
 
 @lru_cache
 def get_llm_client() -> StructuredLLMClient:
-    return StructuredLLMClient()
+    settings = get_settings()
+    # An empty key falls through to the SDK's own environment lookup, so
+    # exporting ANTHROPIC_API_KEY still works for anyone who prefers that.
+    client = (
+        anthropic.Anthropic(api_key=settings.anthropic_api_key, max_retries=2)
+        if settings.anthropic_api_key
+        else None
+    )
+    return StructuredLLMClient(client)
 
 
 def get_triage_service() -> TriageService:

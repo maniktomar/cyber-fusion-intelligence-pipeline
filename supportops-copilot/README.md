@@ -12,9 +12,11 @@ untouched except for one unmistakable `ai-needs-manual-triage` tag. Silence is
 treated as a bug, not a fallback.
 
 > **Build status: stages 1, 3, 4, 5, 6 and 7 of 8 complete.** Only stage 2 --
-> live verification against a real Zendesk account -- remains. This README describes what exists
-> today and is explicit about what does not. See
-> [Roadmap and honest status](#roadmap-and-honest-status).
+> live verification against a real Zendesk account -- remains.
+>
+> This README describes what exists today and is explicit about what does not.
+> See [Roadmap and honest status](#roadmap-and-honest-status) and
+> [Known limitations](#known-limitations).
 
 ---
 
@@ -57,11 +59,11 @@ flowchart LR
     SIDE -->|"reads the triage note"| API
 
     classDef built fill:#dcfce7,stroke:#16a34a,color:#14532d
-    classDef todo fill:#f5f5f4,stroke:#a8a29e,color:#57534e,stroke-dasharray: 4 3
     class OAUTH,STORE,TRIAGE,GUARD,LLM,KB,HOOK,API,SLACK,SIDE,APP built
 ```
 
-Green is implemented and tested. Dashed grey is not built yet.
+Every component above is built and tested. What is untested is the wiring to a
+real Zendesk account, which is the one boundary this diagram cannot show.
 
 ---
 
@@ -96,10 +98,11 @@ Alongside those:
 
 ### Verified, not assumed
 
-Everything below was actually run on 2026-08-18:
+Everything below was actually run, on 2026-08-18, against the whole project --
+not just stage 1:
 
 ```
-444 passed in 6.96s         # pytest
+447 passed in 7.34s         # pytest
 All checks passed!          # ruff check .
 ```
 
@@ -109,7 +112,7 @@ returned `{"status":"ok"}`, `/auth/zendesk/login` issued a correct 307 to
 `state` on the callback was rejected with a 400 before any token exchange.
 
 **CI is green on GitHub Actions** ([run 32196572379](https://github.com/maniktomar/cyber-fusion-intelligence-pipeline/actions/runs/32196572379)):
-lint clean, 444 tests passed, the sidebar JavaScript syntax-checked, every app
+lint clean, all tests passed, the sidebar JavaScript syntax-checked, every app
 and automation JSON validated, the Docker image built, and the container
 smoke-tested to `healthy` on a clean runner.
 
@@ -240,7 +243,7 @@ is a no-op rather than an error.
 
 ## Tests
 
-**444 tests, of which 313 exercise failure, adversarial, or defensive paths.**
+**447 tests, of which 315 exercise failure, adversarial, or defensive paths.**
 
 "Failure path" means a test whose subject is a rejection, a malformed or hostile
 input, an upstream error, a security or safety property, or a boundary -- not a
@@ -266,7 +269,7 @@ happy-path assertion. Counted by hand, not by keyword match.
 | [`test_auth_routes.py`](tests/test_auth_routes.py) | 15 | OAuth endpoints through the real app |
 | [`test_circuit_breaker.py`](tests/test_circuit_breaker.py) | 11 | Closed / open / half-open and the single-probe rule |
 | [`test_oauth_state.py`](tests/test_oauth_state.py) | 9 | CSRF state: replay, forgery, expiry, concurrency |
-| [`test_startup_checks.py`](tests/test_startup_checks.py) | 8 | Refusing to boot without a knowledge base; missing-secret warnings |
+| [`test_startup_checks.py`](tests/test_startup_checks.py) | 11 | Refusing to boot without a knowledge base; missing-secret warnings |
 
 The four cases the brief singles out each have their own test class:
 `TestHighConfidenceSuccess`, `TestLowConfidenceFallback`,
@@ -315,20 +318,60 @@ Python suite.
 
 ## Setup
 
-### 1. Create a Zendesk trial
+Steps 1 and 2 need nothing but this repository. Steps 3 onwards start the
+14-day trial clock, so do them in one sitting.
+
+### 1. Run it locally against mocks
+
+```bash
+cd supportops-copilot && python -m venv .venv
+```
+
+```bash
+./.venv/Scripts/python.exe -m pip install -r requirements.txt
+```
+
+```bash
+cp .env.example .env
+```
+
+Generate the token-encryption key and paste it into `TOKEN_ENCRYPTION_KEY`:
+
+```bash
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
+
+```bash
+./.venv/Scripts/python.exe -m uvicorn app.main:app --reload
+```
+
+`GET /healthz` should return `{"status":"ok"}`. The service boots without any
+Zendesk credentials -- it will log a warning for each unset secret and reject
+the features that depend on them, rather than running them unauthenticated.
+
+Or in Docker:
+
+```bash
+docker compose up --build
+```
+
+### 2. Get an Anthropic API key
+
+[console.anthropic.com](https://console.anthropic.com) -> API Keys. Triage costs
+two calls per ticket; set a spend limit while testing. Put it in
+`ANTHROPIC_API_KEY` in `.env`, or export it -- both work.
+
+### 3. Create a Zendesk trial
 
 Sign up at `zendesk.com`. The **subdomain you choose is permanent** for that
 account - pick something presentable. The trial is Zendesk Suite Professional
-for **14 days**, which is enough for API access, webhooks, triggers, and the
-Apps framework.
+for **14 days**, which covers API access, webhooks, triggers, and the Apps
+framework.
 
-Because the clock starts at signup, do not create the trial until you are ready
-to use it. Stage 1 runs entirely against mocks.
+### 4. Register an OAuth client
 
-### 2. Register an OAuth client
-
-Admin Center, then **Apps and integrations > APIs > Zendesk API > OAuth Clients
-> Add OAuth client**.
+Admin Center -> **Apps and integrations > APIs > Zendesk API > OAuth Clients >
+Add OAuth client**.
 
 | Field | Value |
 |---|---|
@@ -339,38 +382,67 @@ Admin Center, then **Apps and integrations > APIs > Zendesk API > OAuth Clients
 The **secret is displayed exactly once**. Copy it immediately; regenerating it
 invalidates every token already issued.
 
-### 3. Configure
+Fill in `ZENDESK_SUBDOMAIN`, `ZENDESK_CLIENT_ID`, and `ZENDESK_CLIENT_SECRET`,
+then visit `http://localhost:8000/auth/zendesk/login` and complete consent.
+`GET /auth/zendesk/status` should report `connected: true`.
+
+### 5. Expose the service and create the webhook
+
+Zendesk has to reach you, so start a tunnel (ngrok, Cloudflare, or equivalent).
+Then Admin Center -> **Apps and integrations > Webhooks > Create webhook**:
+
+| Field | Value |
+|---|---|
+| Endpoint URL | `https://<your-tunnel>/webhooks/zendesk` |
+| Request method | `POST` |
+| Signing | Enabled - copy the signing secret |
+
+Put the signing secret in `ZENDESK_WEBHOOK_SECRET`. Leaving it blank rejects
+every delivery, which is deliberate: an unset secret must not mean an
+unauthenticated public endpoint.
+
+### 6. Import the triggers and macro
+
+From [`zendesk/triggers/`](zendesk/triggers/) and
+[`zendesk/macros/`](zendesk/macros/), replacing `{{WEBHOOK_ID}}` with the id of
+the webhook you just created. The triage trigger fires only for `urgent` and
+`high` tickets that carry no `ai-` tag -- a Zendesk-side filter that both saves
+LLM spend and stops the service looping on its own updates.
+
+### 7. Install the sidebar app
 
 ```bash
-cp .env.example .env
+cd zendesk_app && zcli apps:create
 ```
 
-Generate the encryption key and paste it into `TOKEN_ENCRYPTION_KEY`:
+`zcli` will ask for the two app settings: `backendUrl` (your tunnel) and
+`backendSecret`. Put that same secret in `ZENDESK_APP_SECRET` so the backend can
+verify the requests Zendesk signs.
 
-```bash
-python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
-```
+### 8. Slack (optional)
 
-Fill in your subdomain, client id, and secret. `.env` is gitignored.
+Create an Incoming Webhook in your Slack workspace and put the URL in
+`SLACK_WEBHOOK_URL`. Leaving it blank disables resolution summaries; it is never
+an error, and Slack being down cannot affect ticket processing.
 
-### 4. Run
+### Configuration reference
 
-```bash
-python -m venv .venv && ./.venv/Scripts/python.exe -m pip install -r requirements.txt
-```
+Every variable, with its effect when unset:
 
-```bash
-./.venv/Scripts/python.exe -m uvicorn app.main:app --reload
-```
+| Variable | Unset behaviour |
+|---|---|
+| `ZENDESK_SUBDOMAIN` | Requests go to `example.zendesk.com` and fail |
+| `ZENDESK_CLIENT_ID` / `_SECRET` | OAuth exchange is rejected by Zendesk |
+| `TOKEN_ENCRYPTION_KEY` | Token store refuses to initialise |
+| `ZENDESK_WEBHOOK_SECRET` | **Every webhook rejected with 401** |
+| `ZENDESK_APP_SECRET` | **Every sidebar request rejected with 401** |
+| `ZENDESK_APP_ISSUER` | Issuer claim is not checked (signature still is) |
+| `SLACK_WEBHOOK_URL` | Resolution summaries silently skipped |
+| `ZENDESK_TOKEN_EXPIRES_IN` | A non-expiring token is requested |
+| `ANTHROPIC_API_KEY` | Falls back to an exported `ANTHROPIC_API_KEY` |
+| `KNOWLEDGE_BASE_PATH` | Defaults to `./data/knowledge_base.json` |
 
-Then open `http://localhost:8000/auth/zendesk/login` in a browser and complete
-consent. `GET /auth/zendesk/status` should report `connected: true`.
-
-Docker:
-
-```bash
-docker compose up --build
-```
+The three in bold fail closed on purpose.
 
 ---
 
@@ -385,7 +457,7 @@ on one visible outcome: tag the ticket `ai-needs-manual-triage`, change nothing
 else, and log why. There is deliberately no path where the copilot does nothing
 and says nothing.
 
-This principle already shapes Stage 1. `get_valid_access_token()` does not
+The principle shows up well below the triage layer. `get_valid_access_token()` does not
 return a token it knows is about to be rejected - it raises
 `ReauthorizationRequiredError` naming the expiry. A corrupt token file raises
 rather than being silently treated as "no token stored", because those two
@@ -530,6 +602,27 @@ asserts against the raw string.
 **The transferable lesson:** a test that parses the output cannot catch an
 encoding bug in the output. Assert on the wire format when the wire format is
 what the other system reads.
+
+### `.env` does not do what everyone assumes it does
+
+Writing the setup guide, I told the reader to put `ANTHROPIC_API_KEY` in `.env`.
+Then I checked, and it would not have worked.
+
+`pydantic-settings` reads `.env` into the `Settings` object. It does **not**
+populate `os.environ`. The Anthropic SDK finds its key by reading `os.environ`.
+So a key placed in `.env` alongside every other variable in this project would
+have been silently invisible, and the only symptom would have been an
+authentication error on the first real triage -- after the trial clock had
+started, which is the worst possible moment to debug configuration.
+
+The fix routes the key through `Settings` like everything else, falling back to
+the SDK's own lookup when unset, so both styles work.
+
+What is notable is how it was found: not by a test, not by running the code, but
+by **writing the documentation and checking a claim I was about to make.** The
+code had been "working" for several stages because nothing had needed a real
+key yet. Documentation is a form of testing -- it forces you to state what the
+system does, and stating it is when you notice it does not.
 
 ### Adding a project broke a sibling project's CI
 
