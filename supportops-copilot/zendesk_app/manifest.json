@@ -1,0 +1,34 @@
+{
+  "name": "SupportOps Copilot",
+  "author": {
+    "name": "Manik Tomar",
+    "email": "maniktomar009@gmail.com"
+  },
+  "defaultLocale": "en",
+  "private": true,
+  "version": "1.0.0",
+  "frameworkVersion": "2.0",
+  "location": {
+    "support": {
+      "ticket_sidebar": {
+        "url": "assets/iframe.html",
+        "flexible": true
+      }
+    }
+  },
+  "parameters": [
+    {
+      "name": "backendUrl",
+      "type": "text",
+      "required": true,
+      "secure": false,
+      "default": "https://localhost:8000"
+    },
+    {
+      "name": "backendSecret",
+      "type": "text",
+      "required": true,
+      "secure": true
+    }
+  ]
+}

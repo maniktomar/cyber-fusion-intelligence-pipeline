@@ -1,0 +1,62 @@
+{
+  "_comment": "SYNTHETIC DATA. Every entry below is fabricated for this portfolio project. No real customer, ticket, or company data appears here, and none should ever be added.",
+  "synthetic": true,
+  "articles": [
+    {
+      "id": "kb-001",
+      "title": "Duplicate charge on a monthly subscription",
+      "category": "billing",
+      "problem": "Customer sees two identical charges for the same billing period on their card statement.",
+      "resolution": "Confirm both charges share the same invoice period in the billing dashboard. If they do, it is a duplicate authorisation: refund the second charge, which settles in 5-10 business days depending on the issuing bank. Tell the customer the exact amount and the expected window. Do not promise a specific date."
+    },
+    {
+      "id": "kb-002",
+      "title": "Password reset email not arriving",
+      "category": "account_access",
+      "problem": "Customer requests a password reset but never receives the email.",
+      "resolution": "Ask them to check spam and any corporate mail filter first. Confirm the address on the account matches the one they are checking - a typo at signup is the most common cause. If the address is correct, trigger a resend from the admin console and confirm delivery in the mail log. If the log shows a hard bounce, the address is invalid and needs changing via identity verification."
+    },
+    {
+      "id": "kb-003",
+      "title": "Two-factor authentication device lost",
+      "category": "account_access",
+      "problem": "Customer replaced their phone and can no longer complete 2FA.",
+      "resolution": "Recovery codes issued at 2FA setup are the first route - ask whether they saved them. If not, 2FA reset requires identity verification and cannot be done from a support ticket alone. Direct them to the account recovery flow and explain that the wait is a deliberate security measure, not a delay."
+    },
+    {
+      "id": "kb-004",
+      "title": "API returns 429 rate limit errors",
+      "category": "technical",
+      "problem": "Customer's integration started receiving HTTP 429 responses.",
+      "resolution": "Point them at the X-RateLimit-Remaining and Retry-After response headers, which say exactly when the window resets. Recommend exponential backoff rather than a fixed retry interval. If their sustained volume genuinely exceeds the plan's limit, a plan change is the fix, not a one-off limit raise."
+    },
+    {
+      "id": "kb-005",
+      "title": "Webhook deliveries failing silently",
+      "category": "technical",
+      "problem": "Customer reports that webhook events are not arriving at their endpoint.",
+      "resolution": "Check the delivery log for the response codes we recorded. A 3xx means we do not follow redirects - they need to register the final URL. A timeout means their endpoint took longer than 10 seconds to respond; the fix is to acknowledge immediately and process asynchronously. A signature mismatch means they are verifying against a rotated secret."
+    },
+    {
+      "id": "kb-006",
+      "title": "Refund requested outside the 30-day window",
+      "category": "billing",
+      "problem": "Customer asks for a refund on a charge older than the refund policy allows.",
+      "resolution": "The 30-day window is policy and support agents cannot override it. Explain the policy plainly without apologising for it repeatedly. Offer what is actually available: cancelling before the next renewal so they are not charged again. Escalate to a manager only if the customer states a billing error rather than a change of mind."
+    },
+    {
+      "id": "kb-007",
+      "title": "Order shipped but tracking has not updated",
+      "category": "shipping",
+      "problem": "Customer's order shows as shipped but the carrier tracking page shows no scans.",
+      "resolution": "Carrier scans commonly lag 24-48 hours after a label is created, so a tracking page with no movement on day one is normal. Confirm the label creation date. If there are still no scans after three business days, the parcel is likely lost in induction: open a carrier trace and offer a replacement rather than making the customer wait on the trace outcome."
+    },
+    {
+      "id": "kb-008",
+      "title": "Request for a feature we do not offer",
+      "category": "feature_request",
+      "problem": "Customer asks for functionality that does not exist in the product.",
+      "resolution": "Do not speculate about the roadmap or give a timeline - that is the single most common source of follow-up complaints. Confirm the feature does not exist today, record the request against the account so it carries weight in planning, and describe any workaround that genuinely solves their underlying problem."
+    }
+  ]
+}

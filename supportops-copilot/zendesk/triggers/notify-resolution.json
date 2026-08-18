@@ -1,0 +1,23 @@
+{
+  "trigger": {
+    "title": "SupportOps Copilot - notify on resolution",
+    "active": true,
+    "description": "Fires the resolution webhook when a ticket the copilot triaged is solved, so a summary reaches Slack.",
+    "conditions": {
+      "all": [
+        { "field": "update_type", "operator": "is", "value": "Change" },
+        { "field": "status", "operator": "value", "value": "solved" },
+        { "field": "current_tags", "operator": "includes", "value": "ai-triaged" }
+      ]
+    },
+    "actions": [
+      {
+        "field": "notification_webhook",
+        "value": [
+          "{{WEBHOOK_ID}}",
+          "{\n  \"type\": \"zen:event-type:ticket.solved\",\n  \"detail\": {\n    \"id\": {{ticket.id}},\n    \"subject\": {{ticket.title | json}},\n    \"assignee\": {{ticket.assignee.name | json}}\n  },\n  \"fired_at\": \"{{ 'now' | date: '%Y-%m-%dT%H:%M:%SZ' }}\"\n}"
+        ]
+      }
+    ]
+  }
+}

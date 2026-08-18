@@ -1,0 +1,14 @@
+.venv/
+.env
+tests/
+docs/
+zendesk/
+zendesk_app/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# Exclude the encrypted token store, NOT the whole data directory -- the
+# knowledge base lives in data/ and the image is useless without it.
+data/*.enc

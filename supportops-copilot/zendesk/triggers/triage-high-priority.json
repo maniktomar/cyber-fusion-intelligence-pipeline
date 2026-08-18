@@ -1,0 +1,27 @@
+{
+  "trigger": {
+    "title": "SupportOps Copilot - triage high priority tickets",
+    "active": true,
+    "description": "Fires the triage webhook for new urgent/high tickets that the copilot has not already touched.",
+    "conditions": {
+      "all": [
+        { "field": "update_type", "operator": "is", "value": "Create" },
+        { "field": "status", "operator": "less_than", "value": "solved" },
+        { "field": "current_tags", "operator": "not_includes", "value": "ai-triaged ai-needs-manual-triage" }
+      ],
+      "any": [
+        { "field": "priority", "operator": "is", "value": "urgent" },
+        { "field": "priority", "operator": "is", "value": "high" }
+      ]
+    },
+    "actions": [
+      {
+        "field": "notification_webhook",
+        "value": [
+          "{{WEBHOOK_ID}}",
+          "{\n  \"type\": \"zen:event-type:ticket.created\",\n  \"detail\": {\n    \"id\": {{ticket.id}},\n    \"subject\": {{ticket.title | json}},\n    \"priority\": {{ticket.priority | json}},\n    \"requester\": {{ticket.requester.name | json}}\n  },\n  \"fired_at\": \"{{ 'now' | date: '%Y-%m-%dT%H:%M:%SZ' }}\"\n}"
+        ]
+      }
+    ]
+  }
+}

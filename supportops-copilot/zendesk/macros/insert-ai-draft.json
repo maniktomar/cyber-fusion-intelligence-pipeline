@@ -1,0 +1,14 @@
+{
+  "macro": {
+    "title": "SupportOps Copilot::Insert AI draft into reply",
+    "active": true,
+    "description": "Opens a public reply pre-filled with a greeting and the ticket context. The agent pastes the AI draft from the internal note beneath it, edits, and sends. Nothing is sent automatically.",
+    "actions": [
+      {
+        "field": "comment_value",
+        "value": "Hi {{ticket.requester.first_name | default: 'there'}},\n\nThanks for getting in touch about \"{{ticket.title}}\" (ref #{{ticket.id}}).\n\n[Paste the suggested reply from the AI internal note here, then edit it before sending.]\n\nBest regards,\n{{current_user.first_name}}\n{{current_user.organization.name | default: 'Customer Support'}}"
+      },
+      { "field": "comment_mode_is_public", "value": "true" }
+    ]
+  }
+}

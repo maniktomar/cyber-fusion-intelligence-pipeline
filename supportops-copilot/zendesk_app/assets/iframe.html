@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SupportOps Copilot</title>
+    <!--
+      ZAF SDK v2, served by Zendesk. It must be loaded from this origin - a
+      bundled copy will not receive the framework's postMessage handshake, so
+      client.get()/client.request() never resolve and the panel sits blank.
+    -->
+    <script src="https://static.zdassets.com/zendesk_app_framework_sdk/2.0/zaf_sdk.min.js"></script>
+    <link rel="stylesheet" href="main.css" />
+  </head>
+  <body>
+    <main id="app" aria-live="polite">
+      <p class="state-message">Loading triage…</p>
+    </main>
+    <template id="tpl-triaged">
+      <section class="card">
+        <header class="card-head">
+          <span class="badge badge-ok">AI triaged</span>
+          <span class="confidence" data-field="classification-confidence"></span>
+        </header>
+        <dl class="facts">
+          <div><dt>Category</dt><dd data-field="category"></dd></div>
+          <div><dt>Urgency</dt><dd data-field="urgency"></dd></div>
+          <div><dt>Sentiment</dt><dd data-field="sentiment"></dd></div>
+        </dl>
+        <p class="reasoning" data-field="reasoning"></p>
+        <h2 class="draft-heading">
+          Suggested reply
+          <span class="confidence" data-field="draft-confidence"></span>
+        </h2>
+        <pre class="draft" data-field="draft"></pre>
+        <p class="grounding" data-field="grounding"></p>
+        <button type="button" id="insert-draft" class="primary">
+          Insert into reply
+        </button>
+        <p class="disclaimer">
+          Inserted as a draft for you to edit. Nothing is sent to the customer
+          until you send it.
+        </p>
+      </section>
+    </template>
+    <template id="tpl-flagged">
+      <section class="card">
+        <header class="card-head">
+          <span class="badge badge-warn">Needs manual triage</span>
+        </header>
+        <p class="reasoning" data-field="fallback-reason"></p>
+        <p class="detail" data-field="fallback-detail"></p>
+        <p class="disclaimer">
+          The copilot did not classify this ticket and did not draft a reply.
+        </p>
+      </section>
+    </template>
+    <script src="main.js"></script>
+  </body>
+</html>

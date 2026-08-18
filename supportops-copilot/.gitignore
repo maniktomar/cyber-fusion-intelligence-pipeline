@@ -1,0 +1,14 @@
+.env
+.venv/
+.ruff_cache/
+.pytest_cache/
+__pycache__/
+*.pyc
+
+# The encrypted token store, not the whole data directory -- the synthetic
+# knowledge base lives in data/ and must be committed.
+data/tokens.enc
+data/*.enc
+
+# zcli build artifacts
+zendesk_app/tmp/

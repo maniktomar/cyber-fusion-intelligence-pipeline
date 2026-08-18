@@ -1,0 +1,18 @@
+services:
+  copilot:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      # Overrides .env: inside the container the store lives on the volume.
+      TOKEN_STORE_PATH: /data/tokens.enc
+    volumes:
+      - token-store:/data
+    restart: unless-stopped
+
+volumes:
+  token-store:
