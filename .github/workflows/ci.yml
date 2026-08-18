@@ -14,6 +14,9 @@ jobs:
           python-version: "3.11"
       - run: python -m pip install --upgrade pip
       - run: pip install -r requirements.txt
-      - run: pytest -q
+      # supportops-copilot has its own dependencies (httpx, anthropic, PyJWT)
+      # and its own workflow. Collecting it here fails at import time, because
+      # the root requirements.txt does not install them.
+      - run: pytest -q --ignore=supportops-copilot
         env:
           PYTHONPATH: ${{ github.workspace }}
