@@ -108,6 +108,11 @@ returned `{"status":"ok"}`, `/auth/zendesk/login` issued a correct 307 to
 `https://<subdomain>.zendesk.com/oauth/authorizations/new?...`, and a forged
 `state` on the callback was rejected with a 400 before any token exchange.
 
+**CI is green on GitHub Actions** ([run 32196572379](https://github.com/maniktomar/cyber-fusion-intelligence-pipeline/actions/runs/32196572379)):
+lint clean, 444 tests passed, the sidebar JavaScript syntax-checked, every app
+and automation JSON validated, the Docker image built, and the container
+smoke-tested to `healthy` on a clean runner.
+
 **The Docker image builds, runs, and serves.** `docker build` succeeds, the
 container runs as a non-root user (uid 10001), its healthcheck reports
 `healthy`, and the same signed-webhook and sidebar checks below pass *inside the
@@ -526,6 +531,29 @@ asserts against the raw string.
 encoding bug in the output. Assert on the wire format when the wire format is
 what the other system reads.
 
+### Adding a project broke a sibling project's CI
+
+The first push turned two workflows green and red: the new
+`supportops-copilot` workflow passed, and the repository's pre-existing `ci`
+workflow failed.
+
+That workflow runs `pytest -q` from the repository root, so it started
+collecting this project's tests -- against the *root* `requirements.txt`, which
+has no `httpx`, `anthropic`, or `PyJWT`. It failed at import before running a
+single test.
+
+Nothing was wrong with either project. The failure lived in an assumption the
+root workflow had always made and never had to state: that every test directory
+under the repository shares one dependency set. This project is the first that
+does not.
+
+Fixed with `--ignore=supportops-copilot` on the root run, which is the same
+separation the sibling projects already get from having their own virtualenvs.
+Worth noting the local reproduction was useless here -- the root venv on my
+machine is missing several *other* projects' dependencies, so the root suite
+fails locally for reasons that have nothing to do with this change. CI was the
+only place the real answer existed.
+
 ### The image built fine and the container was broken
 
 `docker build` succeeded, the container started, the healthcheck went green, and
@@ -728,9 +756,6 @@ The three most likely to be wrong are listed under Known limitations.
   against a signature produced by a real Zendesk webhook. If the construction is
   wrong, every live delivery will 401 -- loudly, which is the right failure, but
   it is the first thing to check in stage 2.
-- **CI has never actually run.** The workflow is written and every step has
-  been executed locally by hand, but no push has happened, so GitHub has never
-  exercised it. This is the cheapest remaining unknown to close.
 - **`zcli apps:validate` has not been run.** It requires Zendesk credentials
   even to validate a local bundle, so the app manifest is checked only by JSON
   parsing and review. The first real validation happens at install time.
